@@ -1,3 +1,6 @@
+[![CI](https://github.com/bombfork/data-breaker/actions/workflows/ci.yml/badge.svg)](https://github.com/bombfork/data-breaker/actions/workflows/ci.yml)
+[![Release](https://github.com/bombfork/data-breaker/actions/workflows/release.yml/badge.svg)](https://github.com/bombfork/data-breaker/actions/workflows/release.yml)
+
 # data-breaker
 
 **Break what data brokers do.**
