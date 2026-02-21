@@ -25,5 +25,5 @@ jobs:
           path: |
             ~/.cargo
             target
-          key: v0-linux-${{ runner.arch }}-${{ steps.cache-key.outputs.cargo-lock-hash }}
+          key: v0-${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-key.outputs.cargo-lock-hash }}
       - run: mise run check
