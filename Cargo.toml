@@ -1,0 +1,11 @@
+[package]
+name = "data-breaker"
+version = "0.1.0"
+edition = "2024"
+description = "Break what data brokers do — automate personal data removal"
+license = "CC-BY-NC-SA-4.0"
+repository = "https://github.com/bombfork/data-breaker"
+keywords = ["privacy", "data-brokers", "cli", "opt-out"]
+categories = ["command-line-utilities"]
+
+[dependencies]
