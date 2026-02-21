@@ -1,5 +1,9 @@
 [![CI](https://github.com/bombfork/data-breaker/actions/workflows/ci.yml/badge.svg)](https://github.com/bombfork/data-breaker/actions/workflows/ci.yml)
-[![Release](https://github.com/bombfork/data-breaker/actions/workflows/release.yml/badge.svg)](https://github.com/bombfork/data-breaker/actions/workflows/release.yml)
+[![Release Linux x86_64](https://github.com/bombfork/data-breaker/actions/workflows/release-linux-x86_64.yml/badge.svg)](https://github.com/bombfork/data-breaker/actions/workflows/release-linux-x86_64.yml)
+[![Release Linux aarch64](https://github.com/bombfork/data-breaker/actions/workflows/release-linux-aarch64.yml/badge.svg)](https://github.com/bombfork/data-breaker/actions/workflows/release-linux-aarch64.yml)
+[![Release macOS x86_64](https://github.com/bombfork/data-breaker/actions/workflows/release-macos-x86_64.yml/badge.svg)](https://github.com/bombfork/data-breaker/actions/workflows/release-macos-x86_64.yml)
+[![Release macOS aarch64](https://github.com/bombfork/data-breaker/actions/workflows/release-macos-aarch64.yml/badge.svg)](https://github.com/bombfork/data-breaker/actions/workflows/release-macos-aarch64.yml)
+[![Release Windows x86_64](https://github.com/bombfork/data-breaker/actions/workflows/release-windows-x86_64.yml/badge.svg)](https://github.com/bombfork/data-breaker/actions/workflows/release-windows-x86_64.yml)
 
 # data-breaker
 
