@@ -1,3 +1,4 @@
+pub mod beenverified;
 pub mod dummy;
 pub mod registry;
 
@@ -70,6 +71,16 @@ pub fn build_connector_registry() -> HashMap<String, Arc<dyn BrokerConnector>> {
     let dummy = Arc::new(dummy::DummyBroker);
     map.insert(dummy.id().to_string(), dummy);
 
+    match beenverified::BeenVerifiedBroker::new() {
+        Ok(bv) => {
+            let bv = Arc::new(bv);
+            map.insert(bv.id().to_string(), bv);
+        }
+        Err(e) => {
+            tracing::warn!("Failed to initialize BeenVerified connector: {e}");
+        }
+    }
+
     map
 }
 
@@ -101,6 +112,51 @@ mod tests {
         };
         let results = dummy.scan(&query).await.unwrap();
         assert!(!results.is_empty());
+    }
+
+    #[test]
+    fn test_registry_contains_beenverified() {
+        let reg = build_connector_registry();
+        assert!(reg.contains_key("beenverified"));
+        let bv = reg.get("beenverified").unwrap();
+        assert_eq!(bv.name(), "BeenVerified");
+        assert!(bv.capabilities().can_scan);
+        assert!(!bv.capabilities().can_delete);
+        assert!(!bv.capabilities().can_check_status);
+    }
+
+    #[tokio::test]
+    async fn test_beenverified_requires_state() {
+        let bv = beenverified::BeenVerifiedBroker::new().unwrap();
+        let query = PersonQuery {
+            first_name: "John".into(),
+            last_name: "Doe".into(),
+            email: None,
+            phone: None,
+            city: None,
+            state: None,
+        };
+        let result = bv.scan(&query).await;
+        assert!(result.is_err());
+        assert!(
+            result.unwrap_err().to_string().contains("state"),
+            "error should mention state requirement"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_beenverified_deletion_not_supported() {
+        let bv = beenverified::BeenVerifiedBroker::new().unwrap();
+        let query = PersonQuery {
+            first_name: "John".into(),
+            last_name: "Doe".into(),
+            email: None,
+            phone: None,
+            city: None,
+            state: None,
+        };
+        assert!(bv.request_deletion(&query, &[]).await.is_err());
+        assert!(bv.check_deletion_status("ref-123").await.is_err());
     }
 
     #[tokio::test]
