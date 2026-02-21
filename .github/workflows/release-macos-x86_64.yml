@@ -15,7 +15,21 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Prepare cache key
+        id: cache-key
+        run: |
+          # Hash Cargo.lock excluding the data-breaker package version line for stable caching
+          HASH=$(grep -n 'name = "data-breaker"' Cargo.lock | head -1 | cut -d: -f1 | xargs -I{} expr {} + 1 | xargs -I{} sed '{}d' Cargo.lock | sha256sum | cut -d' ' -f1)
+          echo "cargo-lock-hash=$HASH" >> "$GITHUB_OUTPUT"
+
       - uses: jdx/mise-action@v2
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo
+            target
+          key: v0-${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-key.outputs.cargo-lock-hash }}
 
       - name: Add target
         run: rustup target add x86_64-apple-darwin
