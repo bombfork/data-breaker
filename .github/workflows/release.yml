@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-linux:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -55,8 +55,56 @@ jobs:
           name: data-breaker-${{ matrix.target }}
           path: data-breaker-${{ matrix.target }}
 
+  build-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-apple-darwin
+          - target: aarch64-apple-darwin
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jdx/mise-action@v2
+
+      - name: Add target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Strip binary
+        run: strip target/${{ matrix.target }}/release/data-breaker
+
+      - name: Package artifact
+        run: cp target/${{ matrix.target }}/release/data-breaker data-breaker-${{ matrix.target }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: data-breaker-${{ matrix.target }}
+          path: data-breaker-${{ matrix.target }}
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jdx/mise-action@v2
+
+      - name: Build
+        run: cargo build --release --target x86_64-pc-windows-msvc
+
+      - name: Package artifact
+        run: cp target/x86_64-pc-windows-msvc/release/data-breaker.exe data-breaker-x86_64-pc-windows-msvc.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: data-breaker-x86_64-pc-windows-msvc
+          path: data-breaker-x86_64-pc-windows-msvc.exe
+
   release:
-    needs: build
+    needs: [build-linux, build-macos, build-windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
