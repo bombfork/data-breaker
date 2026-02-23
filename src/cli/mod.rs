@@ -54,6 +54,9 @@ pub enum Command {
         /// State for location-based searches
         #[arg(long)]
         state: Option<String>,
+        /// Your country (ISO 3166-1 alpha-2, e.g. US, GB, DE) — filters to relevant brokers
+        #[arg(long)]
+        country: Option<String>,
         /// Only scan specific brokers (comma-separated IDs)
         #[arg(long, value_delimiter = ',')]
         brokers: Vec<String>,
@@ -105,6 +108,9 @@ pub enum BrokerCommand {
         /// Filter by category
         #[arg(long)]
         category: Option<String>,
+        /// Filter by broker home country (ISO 3166-1 alpha-2)
+        #[arg(long)]
+        country: Option<String>,
     },
     /// Show details about a specific broker
     Info {

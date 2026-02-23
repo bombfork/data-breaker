@@ -63,6 +63,8 @@ mod tests {
             description: Some("A test broker".into()),
             category: Some("people-search".into()),
             connector: None,
+            country: Some("US".into()),
+            data_countries: Some("US,GB".into()),
             registry_updated_at: None,
             created_at: now.clone(),
             updated_at: now,
@@ -72,15 +74,31 @@ mod tests {
 
         let fetched = db.get_broker("test-broker").unwrap().unwrap();
         assert_eq!(fetched.name, "Test Broker");
+        assert_eq!(fetched.country.as_deref(), Some("US"));
+        assert_eq!(fetched.data_countries.as_deref(), Some("US,GB"));
 
-        let all = db.list_brokers(None).unwrap();
+        let all = db.list_brokers(None, None, None).unwrap();
         assert_eq!(all.len(), 1);
 
-        let filtered = db.list_brokers(Some("people-search")).unwrap();
+        let filtered = db.list_brokers(Some("people-search"), None, None).unwrap();
         assert_eq!(filtered.len(), 1);
 
-        let empty = db.list_brokers(Some("nonexistent")).unwrap();
+        let empty = db.list_brokers(Some("nonexistent"), None, None).unwrap();
         assert!(empty.is_empty());
+
+        // Filter by country
+        let by_country = db.list_brokers(None, Some("US"), None).unwrap();
+        assert_eq!(by_country.len(), 1);
+
+        let no_country = db.list_brokers(None, Some("DE"), None).unwrap();
+        assert!(no_country.is_empty());
+
+        // Filter by data_country
+        let by_data = db.list_brokers(None, None, Some("GB")).unwrap();
+        assert_eq!(by_data.len(), 1);
+
+        let no_data = db.list_brokers(None, None, Some("FR")).unwrap();
+        assert!(no_data.is_empty());
     }
 
     #[test]
@@ -96,6 +114,8 @@ mod tests {
             description: None,
             category: None,
             connector: None,
+            country: None,
+            data_countries: None,
             registry_updated_at: None,
             created_at: now.clone(),
             updated_at: now.clone(),
@@ -135,6 +155,8 @@ mod tests {
             description: None,
             category: None,
             connector: None,
+            country: None,
+            data_countries: None,
             registry_updated_at: None,
             created_at: now.clone(),
             updated_at: now.clone(),

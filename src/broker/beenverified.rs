@@ -156,6 +156,14 @@ impl BrokerConnector for BeenVerifiedBroker {
         }
     }
 
+    fn home_country(&self) -> Option<&str> {
+        Some("US")
+    }
+
+    fn data_countries(&self) -> &[&str] {
+        &["US"]
+    }
+
     async fn scan(&self, query: &PersonQuery) -> anyhow::Result<Vec<FoundRecord>> {
         let state = query
             .state

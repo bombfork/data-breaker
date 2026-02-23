@@ -35,7 +35,7 @@ pub struct ReportSummary {
 
 impl Report {
     pub fn build(db: &Database) -> anyhow::Result<Self> {
-        let brokers = db.list_brokers(None)?;
+        let brokers = db.list_brokers(None, None, None)?;
         let records = db.list_personal_records(None)?;
         let deletion_requests = db.list_deletion_requests(None)?;
 

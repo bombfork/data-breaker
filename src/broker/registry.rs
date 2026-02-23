@@ -11,6 +11,8 @@ struct RegistryBroker {
     description: Option<String>,
     category: Option<String>,
     connector: Option<String>,
+    country: Option<String>,
+    data_countries: Option<String>,
 }
 
 /// Fetch the broker registry from the remote URL and return Broker models.
@@ -38,6 +40,8 @@ pub async fn fetch_registry() -> anyhow::Result<Vec<Broker>> {
             description: rb.description,
             category: rb.category,
             connector: rb.connector,
+            country: rb.country,
+            data_countries: rb.data_countries,
             registry_updated_at: Some(now.clone()),
             created_at: now.clone(),
             updated_at: now.clone(),
