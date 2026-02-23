@@ -8,6 +8,8 @@ pub struct Broker {
     pub description: Option<String>,
     pub category: Option<String>,
     pub connector: Option<String>,
+    pub country: Option<String>,
+    pub data_countries: Option<String>,
     pub registry_updated_at: Option<String>,
     pub created_at: String,
     pub updated_at: String,

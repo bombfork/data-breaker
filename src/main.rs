@@ -42,8 +42,8 @@ async fn main() -> anyhow::Result<()> {
             RegistryCommand::Info => cli::registry::registry_info(&db)?,
         },
         Command::Broker { command } => match command {
-            BrokerCommand::List { category } => {
-                cli::broker::list_brokers(&db, category.as_deref())?
+            BrokerCommand::List { category, country } => {
+                cli::broker::list_brokers(&db, category.as_deref(), country.as_deref())?
             }
             BrokerCommand::Info { id } => cli::broker::broker_info(&db, &id)?,
         },
@@ -54,6 +54,7 @@ async fn main() -> anyhow::Result<()> {
             phone,
             city,
             state,
+            country,
             brokers,
         } => {
             let query = PersonQuery {
@@ -63,6 +64,7 @@ async fn main() -> anyhow::Result<()> {
                 phone,
                 city,
                 state,
+                country,
             };
             cli::scan::scan(&db, &connectors, &query, &brokers).await?;
         }
@@ -79,6 +81,7 @@ async fn main() -> anyhow::Result<()> {
                 phone: None,
                 city: None,
                 state: None,
+                country: None,
             };
             cli::delete::delete(
                 &db,

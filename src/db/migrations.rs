@@ -42,6 +42,9 @@ const MIGRATIONS: &[&str] = &[
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
     );",
+    // Migration 2: Add country fields to brokers
+    "ALTER TABLE brokers ADD COLUMN country TEXT;
+     ALTER TABLE brokers ADD COLUMN data_countries TEXT;",
 ];
 
 pub fn run_migrations(conn: &Connection) -> rusqlite::Result<()> {

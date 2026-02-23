@@ -9,14 +9,16 @@ impl Database {
     pub fn upsert_broker(&self, broker: &Broker) -> anyhow::Result<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
-            "INSERT INTO brokers (id, name, website, description, category, connector, registry_updated_at, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+            "INSERT INTO brokers (id, name, website, description, category, connector, country, data_countries, registry_updated_at, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
              ON CONFLICT(id) DO UPDATE SET
                 name = excluded.name,
                 website = excluded.website,
                 description = excluded.description,
                 category = excluded.category,
                 connector = excluded.connector,
+                country = excluded.country,
+                data_countries = excluded.data_countries,
                 registry_updated_at = excluded.registry_updated_at,
                 updated_at = excluded.updated_at",
             params![
@@ -26,6 +28,8 @@ impl Database {
                 broker.description,
                 broker.category,
                 broker.connector,
+                broker.country,
+                broker.data_countries,
                 broker.registry_updated_at,
                 broker.created_at,
                 broker.updated_at,
@@ -37,77 +41,86 @@ impl Database {
     pub fn get_broker(&self, id: &str) -> anyhow::Result<Option<Broker>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, name, website, description, category, connector, registry_updated_at, created_at, updated_at
+            "SELECT id, name, website, description, category, connector, country, data_countries, registry_updated_at, created_at, updated_at
              FROM brokers WHERE id = ?1",
         )?;
-        let mut rows = stmt.query_map(params![id], |row| {
-            Ok(Broker {
-                id: row.get(0)?,
-                name: row.get(1)?,
-                website: row.get(2)?,
-                description: row.get(3)?,
-                category: row.get(4)?,
-                connector: row.get(5)?,
-                registry_updated_at: row.get(6)?,
-                created_at: row.get(7)?,
-                updated_at: row.get(8)?,
-            })
-        })?;
+        let mut rows = stmt.query_map(params![id], Self::map_broker_row)?;
         match rows.next() {
             Some(row) => Ok(Some(row?)),
             None => Ok(None),
         }
     }
 
-    pub fn list_brokers(&self, category: Option<&str>) -> anyhow::Result<Vec<Broker>> {
+    pub fn list_brokers(
+        &self,
+        category: Option<&str>,
+        country: Option<&str>,
+        data_country: Option<&str>,
+    ) -> anyhow::Result<Vec<Broker>> {
         let conn = self.conn.lock().unwrap();
         let mut brokers = Vec::new();
 
+        // Build dynamic WHERE clauses
+        let mut conditions = Vec::new();
+        let mut param_values: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+
         if let Some(cat) = category {
-            let mut stmt = conn.prepare(
-                "SELECT id, name, website, description, category, connector, registry_updated_at, created_at, updated_at
-                 FROM brokers WHERE category = ?1 ORDER BY name",
-            )?;
-            let rows = stmt.query_map(params![cat], |row| {
-                Ok(Broker {
-                    id: row.get(0)?,
-                    name: row.get(1)?,
-                    website: row.get(2)?,
-                    description: row.get(3)?,
-                    category: row.get(4)?,
-                    connector: row.get(5)?,
-                    registry_updated_at: row.get(6)?,
-                    created_at: row.get(7)?,
-                    updated_at: row.get(8)?,
-                })
-            })?;
-            for row in rows {
-                brokers.push(row?);
-            }
+            conditions.push(format!("category = ?{}", param_values.len() + 1));
+            param_values.push(Box::new(cat.to_string()));
+        }
+        if let Some(c) = country {
+            conditions.push(format!("country = ?{}", param_values.len() + 1));
+            param_values.push(Box::new(c.to_uppercase()));
+        }
+        if let Some(dc) = data_country {
+            // Match comma-separated list: exact match, starts with, ends with, or contains
+            let upper = dc.to_uppercase();
+            let idx = param_values.len() + 1;
+            conditions.push(format!(
+                "(data_countries = ?{idx} OR data_countries LIKE ?{} OR data_countries LIKE ?{} OR data_countries LIKE ?{})",
+                idx + 1, idx + 2, idx + 3
+            ));
+            param_values.push(Box::new(upper.clone()));
+            param_values.push(Box::new(format!("{upper},%")));
+            param_values.push(Box::new(format!("%,{upper}")));
+            param_values.push(Box::new(format!("%,{upper},%")));
+        }
+
+        let where_clause = if conditions.is_empty() {
+            String::new()
         } else {
-            let mut stmt = conn.prepare(
-                "SELECT id, name, website, description, category, connector, registry_updated_at, created_at, updated_at
-                 FROM brokers ORDER BY name",
-            )?;
-            let rows = stmt.query_map([], |row| {
-                Ok(Broker {
-                    id: row.get(0)?,
-                    name: row.get(1)?,
-                    website: row.get(2)?,
-                    description: row.get(3)?,
-                    category: row.get(4)?,
-                    connector: row.get(5)?,
-                    registry_updated_at: row.get(6)?,
-                    created_at: row.get(7)?,
-                    updated_at: row.get(8)?,
-                })
-            })?;
-            for row in rows {
-                brokers.push(row?);
-            }
+            format!(" WHERE {}", conditions.join(" AND "))
+        };
+
+        let sql = format!(
+            "SELECT id, name, website, description, category, connector, country, data_countries, registry_updated_at, created_at, updated_at
+             FROM brokers{where_clause} ORDER BY name"
+        );
+
+        let params: Vec<&dyn rusqlite::types::ToSql> = param_values.iter().map(|p| p.as_ref()).collect();
+        let mut stmt = conn.prepare(&sql)?;
+        let rows = stmt.query_map(params.as_slice(), Self::map_broker_row)?;
+        for row in rows {
+            brokers.push(row?);
         }
 
         Ok(brokers)
+    }
+
+    fn map_broker_row(row: &rusqlite::Row) -> rusqlite::Result<Broker> {
+        Ok(Broker {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            website: row.get(2)?,
+            description: row.get(3)?,
+            category: row.get(4)?,
+            connector: row.get(5)?,
+            country: row.get(6)?,
+            data_countries: row.get(7)?,
+            registry_updated_at: row.get(8)?,
+            created_at: row.get(9)?,
+            updated_at: row.get(10)?,
+        })
     }
 
     // --- Personal Records ---

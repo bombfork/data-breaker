@@ -18,7 +18,7 @@ pub async fn update_registry(db: &Database) -> anyhow::Result<()> {
 
 pub fn registry_info(db: &Database) -> anyhow::Result<()> {
     let last_fetched = db.get_registry_meta("last_fetched_at")?;
-    let broker_count = db.list_brokers(None)?.len();
+    let broker_count = db.list_brokers(None, None, None)?.len();
 
     match last_fetched {
         Some(ts) => println!("Last updated:  {ts}"),

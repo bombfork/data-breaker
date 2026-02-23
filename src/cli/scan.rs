@@ -13,14 +13,23 @@ pub async fn scan(
     query: &PersonQuery,
     broker_filter: &[String],
 ) -> anyhow::Result<()> {
-    let active_connectors: Vec<_> = if broker_filter.is_empty() {
-        connectors.iter().collect()
-    } else {
-        connectors
-            .iter()
-            .filter(|(id, _)| broker_filter.contains(id))
-            .collect()
-    };
+    let user_country = query.country.as_deref().map(|c| c.to_uppercase());
+
+    let active_connectors: Vec<_> = connectors
+        .iter()
+        .filter(|(id, _)| broker_filter.is_empty() || broker_filter.contains(id))
+        .filter(|(_, conn)| {
+            // If the user specified a country, only include connectors that
+            // process data for that country (or have no country restriction).
+            match &user_country {
+                Some(uc) => {
+                    let dc = conn.data_countries();
+                    dc.is_empty() || dc.iter().any(|c| c.eq_ignore_ascii_case(uc))
+                }
+                None => true,
+            }
+        })
+        .collect();
 
     if active_connectors.is_empty() {
         println!("No matching connectors found. Available connectors:");
@@ -48,6 +57,15 @@ pub async fn scan(
                 description: None,
                 category: None,
                 connector: Some(id.to_string()),
+                country: connector.home_country().map(String::from),
+                data_countries: {
+                    let dc = connector.data_countries();
+                    if dc.is_empty() {
+                        None
+                    } else {
+                        Some(dc.join(","))
+                    }
+                },
                 registry_updated_at: None,
                 created_at: now.clone(),
                 updated_at: now,
